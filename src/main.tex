@@ -197,11 +197,11 @@ where the relation ``$\lrharpoon$'' defined as follows:
     {{\primi{assign}_m\,p}\;\cActions\;{\primi{copy}_m\,q\,r}}\\
     
 \trule
-    {p\pEquiv s\;\vee\;q\pEquiv r}
+    {p\pEquiv s}
     {{\primi{copy}\,p\,q}\;\cActions\;{\primi{copy}\,r\,s}}
     &
 \trule
-    {p\pEquiv s\;\vee\;q\pEquiv r}
+    {p\pEquiv s}
     {{\primi{copy}_m\,p\,q}\;\cActions\;{\primi{copy}_m\,r\,s}}\\
 
 \trule
@@ -406,7 +406,7 @@ $\regL$ is a set of all regular languages over $\Sigma$.
 
 $\O$ is an empty language.
 
-Two languages $l_1$ and $l_2$ are \textbf{consistent} if $l_1 \cap l_2 \not= \O$.
+Two languages $l_1$ and $l_2$  \textbf{overlap} if $l_1 \cap l_2 \not= \O$.
 
 \subsection{Name Matchers}
 
@@ -419,7 +419,7 @@ Two languages $l_1$ and $l_2$ are \textbf{consistent} if $l_1 \cap l_2 \not= \O$
 \]
 \noindent As can we see every \textit{name matcher} describes the regular language. Let $\lang_m$ is regular language of $m \in \mathcal{NM}$.
 
-\noindent Two name matchers $m_1, m_2 \in \mathcal{NM}$ are \textbf{consistent} if $\lang_{m_1}$ and $\lang_{m_2}$ are consistent.
+\noindent Two name matchers $m_1, m_2 \in \mathcal{NM}$ \textbf{overlap} if $\lang_{m_1}$ and $\lang_{m_2}$ overlap.
 
 \subsection{Class Matchers}
 
@@ -431,7 +431,7 @@ Let $\lang_\texttt{pkg}(m)$ where $m \in \mathcal{CM}$ is regular language $\lan
 
 Let $\lang_\texttt{name}(m)$ where $m \in \mathcal{CM}$ is regular language $\lang_{m.\texttt{name}}$.
 
-\noindent Two class matchers $m_1, m_2 \in \mathcal{CM}$ are \textbf{consistent} if $\lang_\texttt{pkg}(m_1)$ and $\lang_\texttt{pkg}(m_2)$ are consistent and $\lang_\texttt{name}(m_1)$ and $\lang_\texttt{name}(m_2)$ are consistent.
+\noindent Two class matchers $m_1, m_2 \in \mathcal{CM}$ \textbf{overlap} if $\lang_\texttt{pkg}(m_1)$, $\lang_\texttt{pkg}(m_2)$ overlap and $\lang_\texttt{name}(m_1)$, $\lang_\texttt{name}(m_2)$ overlap.
 
 \subsection{Type Matchers}
 \[
@@ -444,7 +444,7 @@ Let $\lang_\texttt{name}(m)$ where $m \in \mathcal{CM}$ is regular language $\la
 
 \texttt{PrimitiveNameMatches} accepts any package name and concrete class name. \texttt{AnyTypeMatches} accepts any package name and any class name. \texttt{ClassMatcher} represents two languages $\lang_\texttt{pkg}(\texttt{cm})$ and $\lang_\texttt{name}(\texttt{cm})$ to accept package and class names. As a result every type matcher $m \in \mathcal{TM}$ represents two regular languages: $\lang_\texttt{pkg}(m)$ and $\lang_\texttt{name}(m)$.
 
-Two type matchers $m_1, m_2 \in \mathcal{TM}$ are \textbf{consistent} if their $\lang_\texttt{pkg}$ are consistent and their $\lang_\texttt{name}$ are consistent.
+Two type matchers $m_1, m_2 \in \mathcal{TM}$ \textbf{overlap} if $\lang_\texttt{pkg}(m_1)$, $\lang_\texttt{pkg}(m_2)$ overlap and $\lang_\texttt{name}(m_1)$, $\lang_\texttt{name}(m_2)$ overlap.
 
 \subsection{Function Matchers}
 
@@ -482,15 +482,15 @@ Let $m \in \mathcal{FM}$. Then
     \item $\lang_\texttt{name}^\texttt{param}(m,\, i) = \lang_\texttt{name}(m.\texttt{paramTMs}\,(i)) \;\backslash\; \bigcup\limits_{\hat{m} \in \texttt{exclude}} \lang_\texttt{name}^\texttt{param}(\hat{m},\, i)$.
     \end{itemize}
 
-Two function matchers $m_1, m_2 \in \mathcal{FM}$ are \textbf{consistent} if
+Two function matchers $m_1, m_2 \in \mathcal{FM}$ \textbf{overlap} if
 \begin{itemize}
-    \item $\lang_\texttt{pkg}^\texttt{cls}(m_1)$ and $\lang_\texttt{pkg}^\texttt{cls}(m_2)$ are consistent,
-    \item $\lang_\texttt{name}^\texttt{cls}(m_1)$ and $\lang_\texttt{name}^\texttt{cls}(m_2)$ are consistent,
-    \item $\lang_\texttt{name}^\texttt{fun}(m_1)$ and $\lang_\texttt{name}^\texttt{fun}(m_2)$ are consistent,
-    \item $\lang_\texttt{pkg}^\texttt{ret}(m_1)$ and $\lang_\texttt{pkg}^\texttt{ret}(m_2)$ are consistent,
-    \item $\lang_\texttt{name}^\texttt{ret}(m_1)$ and $\lang_\texttt{name}^\texttt{ret}(m_2)$ are consistent,
-    \item for all $i \in \mathbb{N}_0$, $\lang_\texttt{pkg}^\texttt{param}(m_1,\, i)$ and $\lang_\texttt{pkg}^\texttt{param}(m_2,\, i)$ are consistent,
-    \item for all $i \in \mathbb{N}_0$, $\lang_\texttt{name}^\texttt{param}(m_1,\, i)$ and $\lang_\texttt{name}^\texttt{param}(m_2,\, i)$ are consistent.
+    \item $\lang_\texttt{pkg}^\texttt{cls}(m_1)$ and $\lang_\texttt{pkg}^\texttt{cls}(m_2)$ overlap,
+    \item $\lang_\texttt{name}^\texttt{cls}(m_1)$ and $\lang_\texttt{name}^\texttt{cls}(m_2)$ overlap,
+    \item $\lang_\texttt{name}^\texttt{fun}(m_1)$ and $\lang_\texttt{name}^\texttt{fun}(m_2)$ overlap,
+    \item $\lang_\texttt{pkg}^\texttt{ret}(m_1)$ and $\lang_\texttt{pkg}^\texttt{ret}(m_2)$ overlap,
+    \item $\lang_\texttt{name}^\texttt{ret}(m_1)$ and $\lang_\texttt{name}^\texttt{ret}(m_2)$ overlap,
+    \item for all $i \in \mathbb{N}_0$, $\lang_\texttt{pkg}^\texttt{param}(m_1,\, i)$ and $\lang_\texttt{pkg}^\texttt{param}(m_2,\, i)$ overlap,
+    \item for all $i \in \mathbb{N}_0$, $\lang_\texttt{name}^\texttt{param}(m_1,\, i)$ and $\lang_\texttt{name}^\texttt{param}(m_2,\, i)$ overlap.
 \end{itemize}
 
 \section{Conditions}
@@ -528,7 +528,7 @@ Two conditions $c_1,\, c_2 \in \mathcal{C}$ are \textbf{consistent} if $DNF(c_1 
 
 \noindent Two rules $r_1, r_2 \in \mathcal{R}$ are \textbf{conflict} if
 \begin{itemize}
-    \item $r_1.\texttt{methodInfo}$ and $r_2.\texttt{methodInfo}$ are consistent,
+    \item $r_1.\texttt{methodInfo}$ and $r_2.\texttt{methodInfo}$ overlap,
     \item $r_1.\texttt{condition}$ and $r_2.\texttt{condition}$ are consistent,
     \item $r_1.\texttt{actionsAfter} \;\cLists\; r_2.\texttt{actionsAfter}$.
 \end{itemize}
