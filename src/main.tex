@@ -1,11 +1,94 @@
 \documentclass{article}
-\usepackage{amssymb}
-\usepackage{mathtools}
 
-\newcommand{\cActions}{\xleftrightarrow[conflict]{actions}}
+\usepackage{tabularx}
+\usepackage{amsmath,mathrsfs,amssymb}
+\usepackage{bbding}
+\usepackage{alltt}
+\usepackage{epigraph}
+\usepackage{verbatim}
+\usepackage{soul}
+\usepackage{latexsym}
+\usepackage{array}
+\usepackage{comment}
+\usepackage{makeidx}
+\usepackage{listings}
+\usepackage{indentfirst}
+\usepackage{verbatim}
+\usepackage{color}
+\usepackage{url}
+\usepackage{xspace}
+\usepackage{hyperref}
+\usepackage{stmaryrd}
+\usepackage{tikz}
+\usetikzlibrary{arrows,decorations.pathreplacing,backgrounds,fit,positioning,shapes,chains,calligraphy,arrows.meta,shapes.arrows,overlay-beamer-styles}
+\usepackage{euscript}
+\usepackage{mathtools}
+\usepackage{graphicx}
+\usepackage{euscript}
+\usepackage{mathtools}
+\usepackage{transparent}
+\usepackage{bold-extra}
+\usepackage{subcaption}
+\usepackage{placeins}
+\usepackage{tikzsymbols}
+\usepackage{amsthm}
+
+\newcommand{\sembr}[1]{\llbracket{#1}\rrbracket}
+\newcommand{\primi}[1]{\mathbf{#1}}
+\newcommand{\Int}[2]{\primi{int}^{\mathcal {#1}}_{\mathcal {#2}}}
+\newcommand{\IntS}[2]{{int}^{\mathcal {#1}}_{\mathcal {#2}}}
+\newcommand{\Comp}[3]{\primi{comp}^{\mathcal {#1}\to\mathcal{#2}}_{\mathcal {#3}}}
+\newcommand{\Spec}[2]{\primi{spec}^{\mathcal{#1}}_{\mathcal {#2}}}
+\newcommand{\SpecS}[2]{{spec}^{\mathcal{#1}}_{\mathcal {#2}}}
+\newcommand{\Sem}[2]{\sembr{#1}_{\mathcal {#2}}}
+\newcommand{\ph}{{\phantom{x}}}
+\newcommand{\inbr}[1]{\left<{#1}\right>}
+\newcommand{\fv}[1]{\mathcal{FV}\,(#1)}
+\def\transarrow{\xrightarrow}
+\newcommand{\setarrow}[1]{\def\transarrow{#1}}
+
+\newcommand{\lrharpoon}{
+  \mathrlap{\leftharpoonup}%
+  \rightharpoondown
+}
+
+\def\padding{\phantom{X}}
+\newcommand{\setpadding}[1]{\def\padding{#1}}
+
+\def\subarrow{}
+\newcommand{\setsubarrow}[1]{\def\subarrow{#1}}
+
+\newcommand{\trule}[2]{\dfrac{#1}{#2}}
+\newcommand{\crule}[3]{\dfrac{#1}{#2},\;{#3}}
+\newcommand{\withenv}[2]{{#1}\vdash{#2}}
+\newcommand{\trans}[3]{{#1}\transarrow{\padding{\textstyle #2}\padding}\subarrow{#3}}
+\newcommand{\ctrans}[4]{{#1}\transarrow{\padding#2\padding}\subarrow{#3},\;{#4}}
+\newcommand{\llang}[1]{\mbox{\lstinline[mathescape]|#1|}}
+\newcommand{\pair}[2]{\inbr{{#1}\mid{#2}}}
+\newcommand{\highlight}[1]{\color{red}{#1}}
+\newcommand{\ruleno}[1]{\mbox{[\textsc{#1}]}}
+\newcommand{\rulename}[1]{\textsc{#1}}
+\newcommand{\inmath}[1]{\mbox{$#1$}}
+\newcommand{\lfp}[1]{fix_{#1}}
+\newcommand{\gfp}[1]{Fix_{#1}}
+\newcommand{\vsep}{\vspace{-2mm}}
+\newcommand{\supp}[1]{\scriptsize{#1}}
+\newcommand{\cd}[1]{\texttt{#1}}
+\newcommand{\free}[1]{\boxed{#1}}
+\newcommand{\binds}{\;\mapsto\;}
+\newcommand{\dbi}[1]{\mbox{\bf{#1}}}
+\newcommand{\sv}[1]{\mbox{\textbf{#1}}}
+\newcommand{\bnd}[2]{{#1}\mkern-9mu\binds\mkern-9mu{#2}}
+\newcommand{\meta}[1]{{\mathcal{#1}}}
+\renewcommand{\emptyset}{\varnothing}
+\newcommand{\dom}[1]{\mathtt{dom}\;{#1}}
+\newcommand{\transrel}{\setpadding{}\trans{}{}{}}
+\DeclareMathOperator{\dplus}{+\kern -0.4em+}
+
+\newcommand{\cActions}{\leftrightarrow}
 \newcommand{\cList}{\xRightarrow[conflicts]{list}}
 \newcommand{\cLists}{\xLeftrightarrow[conflict]{lists}}
-\newcommand{\pEquiv}{\equiv_\mathcal{P}}
+\newcommand{\pEquiv}{\equiv_{\scriptscriptstyle{\mathcal{P}}}}
 \newcommand{\mEquiv}{\equiv_\mathcal{M}}
 
 \newcommand{\lang}{\mathfrak{L}}
@@ -30,57 +113,33 @@
 \mathcal{M} = A \mid B \mid C \mid \ldots
 \]
 
-
 \subsection{Positions}
 
 \noindent \textit{Note:} we ignore position \texttt{ResultAnyElement} now \textit{(by Konstantin Chukharev's view)}.
 \[
 \begin{array}{rcl}
-\mathcal{P} & =    & \texttt{Argument}\,(\texttt{index} : \texttt{int}) \\
-            & \mid & \texttt{AnyArgument} \\
-            & \mid & \texttt{This} \\
-            & \mid & \texttt{Result}
+\mathcal{P} & = & \primi{arg}_\mathbb{N} \\
+            &   & \primi{arg} \\
+            &   & \primi{this} \\
+            &   & \primi{result}
 \end{array}
 \]
 
-\noindent Relation $\mathcal{P} \pEquiv \mathcal{P}$ defines all pairs of \textbf{consistent} positions.
+\noindent Relation $\pEquiv\;\subseteq\;\mathcal{P}\times\mathcal{P}$ defines all pairs of \emph{consistent} positions:
 
 \[
-\begin{array}{rcll}
-
- \texttt{Argument}\,(\texttt{i}) &
- \pEquiv &
- \texttt{Argument}\,(\texttt{j}), &
- \mbox{if } i = j \\
-
- \texttt{Argument}\,(\texttt{i}) &
- \pEquiv &
-
- \texttt{AnyArgument} \\
-
- \texttt{AnyArgument} &
- \pEquiv &
- \texttt{Argument}\,(\texttt{i}) \\
-
- \texttt{This} &
- \pEquiv &
- \texttt{This} \\
-
- \texttt{Result} &
- \pEquiv &
- \texttt{Result} \\
-\end{array}
+  \pEquiv = \primi{refl}_\mathcal{P} \cup \primi{symm}\,(\primi{arg}_{\mathbb{N}}\times\primi{arg})
 \]
-
 
 \subsection{Actions}
+
 \[
 \begin{array}{rcl}
-\mathcal{A} & =    & \texttt{CopyAllMarks}\,(\texttt{from} : \mathcal{P},\; \texttt{to} : \mathcal{P}) \\
-            & \mid & \texttt{CopyMark}\,(\texttt{mark} : \mathcal{M},\; \texttt{from} : \mathcal{P},\; \texttt{to} : \mathcal{P}) \\
-            & \mid & \texttt{AssignMark}\,(\texttt{mark} : \mathcal{M},\; \texttt{pos} : \mathcal{P}) \\
-            & \mid & \texttt{RemoveAllMarks}\,(\texttt{pos} : \mathcal{P}) \\
-            & \mid & \texttt{RemoveMark}\,(\texttt{mark} : \mathcal{M},\; \texttt{pos} : \mathcal{P})
+\mathcal{A} & = & \primi{copy}\;\mathcal{P}\;\mathcal{P} \\
+            &   & \primi{copy}_\mathcal{M}\;\mathcal{P}\;\mathcal{P} \\
+            &   & \primi{assign}_\mathcal{M}\;\mathcal{P} \\
+            &   & \primi{remove}\;\mathcal{P}\\
+            &   & \primi{remove}_\mathcal{M}\;\mathcal{P}
 \end{array}
 \]
 
@@ -93,8 +152,66 @@ There are two types of conflicts: \textit{add-remove} and \textit{read-write}.
 \textit{Read-write} conflict is a situation where we want to change the mark set at a given position and read the marks from the same position. In this case the answer will be clear (we look at the original marks when reading, and not at the actual ones). However, the semantics of the reading process becomes non-trivial. We want to exclude such cases \textit{(by Konstantin Chukharev's view)}.
 
 
-\noindent Relation $\mathcal{A} \cActions \mathcal{A}$ defines all pairs of conflicting actions.
+\noindent Relation $\cActions\;\subseteq\;\mathcal{A}\times\mathcal{A}$ defines all pairs of conflicting actions:
 
+\[
+\cActions \;=\;\primi{symm}\,\lrharpoon
+\]
+
+where the relation ``$\lrharpoon$'' defined as follows:
+
+\[
+\renewcommand{\arraystretch}{2.5}
+\renewcommand{\cActions}{\lrharpoon}
+\begin{array}{cc}
+\trule
+    {p\pEquiv r\;\vee\; q\pEquiv r}
+    {{\primi{copy}\,p\,q}\;\cActions\;{\primi{remove}\,r}}
+    &
+\trule
+    {p\pEquiv r\;\vee\; q\pEquiv r}
+    {{\primi{copy}\,p\,q}\;\cActions\;{\primi{remove}_m\,r}}\\
+
+\trule
+    {p\pEquiv r\;\vee\; q\pEquiv r}
+    {{\primi{copy}_m\,p\,q}\;\cActions\;{\primi{remove}\,r}}
+    &
+\trule
+    {p\pEquiv r\;\vee\; q\pEquiv r}
+    {{\primi{copy}_m\,p\,q}\;\cActions\;{\primi{remove}_m\,r}}\\
+
+\trule
+    {p\pEquiv q}
+    {{\primi{assign}_m\,p}\;\cActions\;{\primi{remove}\,q}}
+    &
+\trule
+    {p\pEquiv q}
+    {{\primi{assign}_m\,p}\;\cActions\;{\primi{remove}_m\,q}}\\
+
+\trule
+    {p\pEquiv q}
+    {{\primi{assign}_m\,p}\;\cActions\;{\primi{copy}\,q\,r}}
+    &
+\trule
+    {p\pEquiv q}
+    {{\primi{assign}_m\,p}\;\cActions\;{\primi{copy}_m\,q\,r}}\\
+    
+\trule
+    {p\pEquiv s\;\vee\;q\pEquiv r}
+    {{\primi{copy}\,p\,q}\;\cActions\;{\primi{copy}\,r\,s}}
+    &
+\trule
+    {p\pEquiv s\;\vee\;q\pEquiv r}
+    {{\primi{copy}_m\,p\,q}\;\cActions\;{\primi{copy}_m\,r\,s}}\\
+
+\trule
+    {p\pEquiv s\;\vee\;q\pEquiv r}
+    {{\primi{copy}_m\,p\,q}\;\cActions\;{\primi{copy}\,r\,s}}
+    &
+\end{array}
+\]
+
+\begin{comment}
 {\footnotesize \[
 \begin{array}{rcll}
 
@@ -257,6 +374,7 @@ There are two types of conflicts: \textit{add-remove} and \textit{read-write}.
 
 \end{array}
 \]}
+\end{comment}
 
 \subsection{Lists of Actions}
 
