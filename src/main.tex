@@ -1,0 +1,417 @@
+\documentclass{article}
+\usepackage{amssymb}
+\usepackage{mathtools}
+
+\newcommand{\cActions}{\xleftrightarrow[conflict]{actions}}
+\newcommand{\cList}{\xRightarrow[conflicts]{list}}
+\newcommand{\cLists}{\xLeftrightarrow[conflict]{lists}}
+\newcommand{\pEquiv}{\equiv_\mathcal{P}}
+\newcommand{\mEquiv}{\equiv_\mathcal{M}}
+
+\newcommand{\lang}{\mathfrak{L}}
+\newcommand{\regL}{\lang_{reg}}
+\newcommand{\fullL}{$\Sigma^*$}
+
+\newcommand{\descr}[1]{\mbox{\scriptsize ({#1})}}
+
+\title{Taint Model}
+\author{Peter Lozov}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section{Actions}
+
+\subsection{Marks}
+
+\[
+\mathcal{M} = A \mid B \mid C \mid \ldots
+\]
+
+
+\subsection{Positions}
+
+\noindent \textit{Note:} we ignore position \texttt{ResultAnyElement} now \textit{(by Konstantin Chukharev's view)}.
+\[
+\begin{array}{rcl}
+\mathcal{P} & =    & \texttt{Argument}\,(\texttt{index} : \texttt{int}) \\
+            & \mid & \texttt{AnyArgument} \\
+            & \mid & \texttt{This} \\
+            & \mid & \texttt{Result}
+\end{array}
+\]
+
+\noindent Relation $\mathcal{P} \pEquiv \mathcal{P}$ defines all pairs of \textbf{consistent} positions.
+
+\[
+\begin{array}{rcll}
+
+ \texttt{Argument}\,(\texttt{i}) &
+ \pEquiv &
+ \texttt{Argument}\,(\texttt{j}), &
+ \mbox{if } i = j \\
+
+ \texttt{Argument}\,(\texttt{i}) &
+ \pEquiv &
+
+ \texttt{AnyArgument} \\
+
+ \texttt{AnyArgument} &
+ \pEquiv &
+ \texttt{Argument}\,(\texttt{i}) \\
+
+ \texttt{This} &
+ \pEquiv &
+ \texttt{This} \\
+
+ \texttt{Result} &
+ \pEquiv &
+ \texttt{Result} \\
+\end{array}
+\]
+
+
+\subsection{Actions}
+\[
+\begin{array}{rcl}
+\mathcal{A} & =    & \texttt{CopyAllMarks}\,(\texttt{from} : \mathcal{P},\; \texttt{to} : \mathcal{P}) \\
+            & \mid & \texttt{CopyMark}\,(\texttt{mark} : \mathcal{M},\; \texttt{from} : \mathcal{P},\; \texttt{to} : \mathcal{P}) \\
+            & \mid & \texttt{AssignMark}\,(\texttt{mark} : \mathcal{M},\; \texttt{pos} : \mathcal{P}) \\
+            & \mid & \texttt{RemoveAllMarks}\,(\texttt{pos} : \mathcal{P}) \\
+            & \mid & \texttt{RemoveMark}\,(\texttt{mark} : \mathcal{M},\; \texttt{pos} : \mathcal{P})
+\end{array}
+\]
+
+We need to find conflicting actions to detect inconsitent rules.
+
+There are two types of conflicts: \textit{add-remove} and \textit{read-write}.
+
+\textit{Add-remove} conflict is a situation where we want to add and remove the same mark at a given position at the same time. In this case, the answer depends on the order in which the actions are performed.
+
+\textit{Read-write} conflict is a situation where we want to change the mark set at a given position and read the marks from the same position. In this case the answer will be clear (we look at the original marks when reading, and not at the actual ones). However, the semantics of the reading process becomes non-trivial. We want to exclude such cases \textit{(by Konstantin Chukharev's view)}.
+
+
+\noindent Relation $\mathcal{A} \cActions \mathcal{A}$ defines all pairs of conflicting actions.
+
+{\footnotesize \[
+\begin{array}{rcll}
+
+\texttt{CopyAllMarks}\,(\texttt{from},\,\texttt{to}) &
+\cActions &
+\texttt{RemoveAllMarks}\,(\texttt{pos}), &
+\begin{array}{ll}
+\mbox{if} & \texttt{from} \pEquiv \texttt{pos} \\
+\mbox{or} & \texttt{to} \pEquiv \texttt{pos}
+\end{array}
+\vspace{2mm} \\
+
+\texttt{CopyAllMarks}\,(\texttt{from},\,\texttt{to}) &
+\cActions &
+\texttt{RemoveMark}\,(\texttt{mark},\,\texttt{pos}), &
+\begin{array}{ll}
+\mbox{if} & \texttt{from} \pEquiv \texttt{pos} \\
+\mbox{or} & \texttt{to} \pEquiv \texttt{pos}
+\end{array}
+\vspace{2mm}\\
+
+\texttt{CopyMark}\,(\texttt{mark},\,\texttt{from},\,\texttt{to}) &
+\cActions &
+\texttt{RemoveAllMarks}\,(\texttt{pos}), &
+\begin{array}{ll}
+\mbox{if} & \texttt{from} \pEquiv \texttt{pos} \\
+\mbox{or} & \texttt{to} \pEquiv \texttt{pos}
+\end{array}
+\vspace{2mm} \\
+
+\texttt{CopyMark}\,(\texttt{mark}_1,\,\texttt{from},\,\texttt{to}) &
+\cActions &
+\texttt{RemoveMark}\,(\texttt{mark}_2,\,\texttt{pos}), &
+\begin{array}{ll}
+\mbox{if} & \texttt{mark}_1 = \texttt{mark}_2 \\
+\mbox{and} & (\texttt{to} \pEquiv \texttt{pos} \\
+\mbox{or} & \texttt{from} \pEquiv \texttt{pos})
+\end{array}
+\vspace{2mm} \\
+
+\texttt{AssignMark}\,(\texttt{mark},\,\texttt{pos}_1) &
+\cActions &
+\texttt{RemoveAllMarks}\,(\texttt{pos}_2), &
+\mbox{ if } \texttt{pos}_1 \pEquiv \texttt{pos}_2
+\vspace{2mm} \\
+
+\texttt{AssignMark}\,(\texttt{mark}_1,\,\texttt{pos}_1) &
+\cActions &
+\texttt{RemoveMark}\,(\texttt{mark}_2,\,\texttt{pos}_2), &
+\begin{array}{ll}
+\mbox{if} & \texttt{pos}_1 \pEquiv \texttt{pos}_2 \\
+\mbox{and} & \texttt{mark}_1 = \texttt{mark}_2
+\end{array}
+\vspace{2mm} \\
+
+\texttt{RemoveAllMarks}\,(\texttt{pos}), &
+\cActions &
+\texttt{CopyAllMarks}\,(\texttt{from},\,\texttt{to}) &
+\begin{array}{ll}
+\mbox{if} & \texttt{from} \pEquiv \texttt{pos} \\
+\mbox{or} & \texttt{to} \pEquiv \texttt{pos}
+\end{array}
+\vspace{2mm} \\
+
+\texttt{RemoveMark}\,(\texttt{mark},\,\texttt{pos}), &
+\cActions &
+\texttt{CopyAllMarks}\,(\texttt{from},\,\texttt{to}) &
+\begin{array}{ll}
+\mbox{if} & \texttt{from} \pEquiv \texttt{pos} \\
+\mbox{or} & \texttt{to} \pEquiv \texttt{pos}
+\end{array}
+\vspace{2mm}\\
+
+\texttt{RemoveAllMarks}\,(\texttt{pos}), &
+\cActions &
+\texttt{CopyMark}\,(\texttt{mark},\,\texttt{from},\,\texttt{to}) &
+\begin{array}{ll}
+\mbox{if} & \texttt{from} \pEquiv \texttt{pos} \\
+\mbox{or} & \texttt{to} \pEquiv \texttt{pos}
+\end{array}
+\vspace{2mm} \\
+
+\texttt{RemoveMark}\,(\texttt{mark}_1,\,\texttt{pos}), &
+\cActions &
+\texttt{CopyMark}\,(\texttt{mark}_2,\,\texttt{from},\,\texttt{to}) &
+\begin{array}{ll}
+\mbox{if} & \texttt{mark}_1 = \texttt{mark}_2 \\
+\mbox{and} & (\texttt{to} \pEquiv \texttt{pos} \\
+\mbox{or} & \texttt{from} \pEquiv \texttt{pos})
+\end{array}
+\vspace{2mm} \\
+
+\texttt{RemoveAllMarks}\,(\texttt{pos}_1), &
+\cActions &
+\texttt{AssignMark}\,(\texttt{mark},\,\texttt{pos}_2) &
+\mbox{ if } \texttt{pos}_1 \pEquiv \texttt{pos}_2
+\vspace{2mm} \\
+
+\texttt{RemoveMark}\,(\texttt{mark}_1,\,\texttt{pos}_1), &
+\cActions &
+\texttt{AssignMark}\,(\texttt{mark}_2,\,\texttt{pos}_2) &
+\begin{array}{ll}
+\mbox{if} & \texttt{pos}_1 \pEquiv \texttt{pos}_2 \\
+\mbox{and} & \texttt{mark}_1 = \texttt{mark}_2
+\end{array}
+\vspace{2mm} \\
+
+\texttt{CopyAllMarks}\,(\texttt{from}_1,\,\texttt{to}_1), &
+\cActions &
+\texttt{CopyAllMarks}\,(\texttt{from}_2,\,\texttt{to}_2), &
+\mbox{ if } \texttt{to}_1 \pEquiv \texttt{from}_2
+\vspace{2mm} \\
+
+\texttt{CopyMark}\,(\texttt{mark},\, \texttt{from}_1,\,\texttt{to}_1), &
+\cActions &
+\texttt{CopyAllMarks}\,(\texttt{from}_2,\,\texttt{to}_2), &
+\begin{array}{ll}
+\mbox{if} & \texttt{to}_1 \pEquiv \texttt{from}_2 \\
+\mbox{or} & \texttt{to}_2 \pEquiv \texttt{from}_1
+\end{array}
+\vspace{2mm} \\
+
+\texttt{CopyMark}\,(\texttt{mark}_1,\,\texttt{from}_1,\,\texttt{to}_1), &
+\cActions &
+\texttt{CopyMark}\,(\texttt{mark}_2,\,\texttt{from}_2,\,\texttt{to}_2), &
+\begin{array}{ll}
+\mbox{if} & \texttt{to}_1 \pEquiv \texttt{from}_2 \\
+\mbox{and} & \texttt{mark}_1 = \texttt{mark}_2
+\end{array}
+\vspace{2mm} \\
+
+\texttt{AssignMark}\,(\texttt{mark},\,\texttt{pos}), &
+\cActions &
+\texttt{CopyAllMarks}\,(\texttt{from},\,\texttt{to}), &
+\mbox{ if } \texttt{pos} \pEquiv \texttt{from}
+\vspace{2mm} \\
+
+\texttt{AssignMark}\,(\texttt{mark}_1,\,\texttt{pos}), &
+\cActions &
+\texttt{CopyMark}\,(\texttt{mark}_2,\,\texttt{from},\,\texttt{to}), &
+\begin{array}{ll}
+\mbox{if} & \texttt{pos} \pEquiv \texttt{from} \\
+\mbox{and} & \texttt{mark}_1 = \texttt{mark}_2
+\end{array}
+\vspace{2mm} \\
+
+\texttt{CopyAllMarks}\,(\texttt{from},\,\texttt{to}), &
+\cActions &
+\texttt{AssignMark}\,(\texttt{mark},\,\texttt{pos}), &
+\mbox{ if } \texttt{pos} \pEquiv \texttt{from}
+\vspace{2mm} \\
+
+\texttt{CopyMark}\,(\texttt{mark}_2,\,\texttt{from},\,\texttt{to}), &
+\cActions &
+\texttt{AssignMark}\,(\texttt{mark}_1,\,\texttt{pos}), &
+\begin{array}{ll}
+\mbox{if} & \texttt{pos} \pEquiv \texttt{from} \\
+\mbox{and} & \texttt{mark}_1 = \texttt{mark}_2
+\end{array}
+
+\end{array}
+\]}
+
+\subsection{Lists of Actions}
+
+\[\mathcal{L} = \{\mathcal{A}_i\}_{i=1}^{n}\]
+
+\noindent Relation $\cList \mathcal{L}$ defines all self-conflicting lists of actions.
+\[
+\cList l,\; \mbox{if }\, \exists\, a_1,\, a_2 \in l\, : \, a_1 \cActions a_2
+\]
+
+\noindent Relation $\mathcal{L} \cLists \mathcal{L}$ defines all pairs of conflicting lists of actions.
+\[
+l_1 \cLists l_2,\; \mbox{if }\, \exists\, a_1 \in l_1,\, a_2 \in l_2\, : \, a_1 \cActions a_2
+\]
+
+
+\section{Matchers}
+\subsection{Regular Languages}
+
+\textit{Note:} we assume that regular expressions are classical regular expressions and describe regular languages.
+
+We use regular expressions to express patterns of names of packages, classes and methods. Every regular expression is corresponded regular language $\lang$. And every regular language is a set of matchable names.
+
+For the rest of the paper we will consider all patterns as regular languages. We will also use set theoretic operations (equality, intersection and subtraction) to find common matchable names.
+
+$\Sigma$ is a alphabet for Java names of methods, packages and classes (letters, digits, dot, underscore).
+
+$\regL$ is a set of all regular languages over $\Sigma$.
+
+$\O$ is an empty language.
+
+Two languages $l_1$ and $l_2$ are \textbf{consistent} if $l_1 \cap l_2 \not= \O$.
+
+\subsection{Name Matchers}
+
+\[
+\begin{array}{rcll}
+\mathcal{NM} & =    & \texttt{NameIsEqualTo}\,(\texttt{word} : \Sigma^*) & \descr{one word language} \\
+             & \mid & \texttt{NameMatches}\,(\texttt{pattern} : \regL) & \descr{regular language} \\
+             & \mid & \texttt{AnyNameMatches} & \descr{\fullL language}
+\end{array}
+\]
+\noindent As can we see every \textit{name matcher} describes the regular language. Let $\lang_m$ is regular language of $m \in \mathcal{NM}$.
+
+\noindent Two name matchers $m_1, m_2 \in \mathcal{NM}$ are \textbf{consistent} if $\lang_{m_1}$ and $\lang_{m_2}$ are consistent.
+
+\subsection{Class Matchers}
+
+\[
+\mathcal{CM} = \{\;\texttt{pkg} : \mathcal{NM};\; \texttt{name} : \mathcal{NM}\;\}
+\]
+
+Let $\lang_\texttt{pkg}(m)$ where $m \in \mathcal{CM}$ is regular language $\lang_{m.\texttt{pkg}}$.
+
+Let $\lang_\texttt{name}(m)$ where $m \in \mathcal{CM}$ is regular language $\lang_{m.\texttt{name}}$.
+
+\noindent Two class matchers $m_1, m_2 \in \mathcal{CM}$ are \textbf{consistent} if $\lang_\texttt{pkg}(m_1)$ and $\lang_\texttt{pkg}(m_2)$ are consistent and $\lang_\texttt{name}(m_1)$ and $\lang_\texttt{name}(m_2)$ are consistent.
+
+\subsection{Type Matchers}
+\[
+\begin{array}{rcll}
+\mathcal{TM} & =    & \texttt{PrimitiveNameMatches}\,(\texttt{name} : \Sigma^*) \\
+             & \mid & \texttt{ClassMatcher}\,(\texttt{cm} : \mathcal{CM}) \\
+             & \mid & \texttt{AnyTypeMatches}
+\end{array}
+\]
+
+\texttt{PrimitiveNameMatches} accepts any package name and concrete class name. \texttt{AnyTypeMatches} accepts any package name and any class name. \texttt{ClassMatcher} represents two languages $\lang_\texttt{pkg}(\texttt{cm})$ and $\lang_\texttt{name}(\texttt{cm})$ to accept package and class names. As a result every type matcher $m \in \mathcal{TM}$ represents two regular languages: $\lang_\texttt{pkg}(m)$ and $\lang_\texttt{name}(m)$.
+
+Two type matchers $m_1, m_2 \in \mathcal{TM}$ are \textbf{consistent} if their $\lang_\texttt{pkg}$ are consistent and their $\lang_\texttt{name}$ are consistent.
+
+\subsection{Function Matchers}
+
+\noindent \textit{Note 1}: we can ignore \texttt{applyToOverrides}, \texttt{functionLabel} and \texttt{modifier} properties since we have no information about concrete methods.
+
+\noindent \textit{Note 2}: in real world parameter matchers are represented as a list of parameter indexes and type matchers. In this paper we represent parameters matchers as a function from indexes to type matchers. For \texttt{exclude}-matchers, we define that all parameters not mentioned in the list correspond to an empty pattern $\O$. For all non-\texttt{exclude} function matchers, we define that all parameters not mentioned in the list correspond to $\Sigma^*$.
+\begin{align*}
+& \mathcal{FM} = \{\; \\
+& \quad \texttt{cls} : \mathcal{TM}; \\
+& \quad \texttt{funName} : \mathcal{NM}; \\
+& \quad \texttt{paramTMs} : \mathbb{N}_0 \rightarrow \mathcal{TM}; \\
+& \quad \texttt{returnTM} : \mathcal{TM}; \\
+& \quad \texttt{exclude} : \mathcal{FM}^*; \\
+& \}
+\end{align*}
+
+Let's define all patterns (regular languages) that the function matcher $m$ contains.
+There are pattern of class package $\lang_\texttt{pkg}^\texttt{cls}(m)$, pattern of class name $\lang_\texttt{name}^\texttt{cls}(m)$, pattern of function name $\lang_\texttt{name}^\texttt{fun}(m)$, pattern of return type package $\lang_\texttt{pkg}^\texttt{ret}(m)$, pattern of return type name $\lang_\texttt{name}^\texttt{ret}(m)$.
+Also we have patterns of parameter type packages $\lang_\texttt{pkg}^\texttt{param}(m,\, i)$ and patterns of parameter type names $\lang_\texttt{name}^\texttt{param}(m,\, i)$ for each $i \in \mathbb{N}_0$. All these patterns are defined recursively, since we need to take into account the negative patterns \texttt{exclude}.
+
+Let $m \in \mathcal{FM}$. Then
+\begin{itemize}
+    \item $\lang_\texttt{pkg}^\texttt{cls}(m) = \lang_\texttt{pkg}(m.\texttt{cls}) \;\backslash\; \bigcup\limits_{\hat{m} \in \texttt{exclude}} \lang_\texttt{pkg}^\texttt{cls}(\hat{m})$,
+
+    \item $\lang_\texttt{name}^\texttt{cls}(m) = \lang_\texttt{name}(m.\texttt{cls}) \;\backslash\; \bigcup\limits_{\hat{m} \in \texttt{exclude}} \lang_\texttt{name}^\texttt{cls}(\hat{m})$,
+
+    \item $\lang_\texttt{name}^\texttt{fun}(m) = \lang_{m.\texttt{funName}} \;\backslash\; \bigcup\limits_{\hat{m} \in \texttt{exclude}} \lang_\texttt{name}^\texttt{fun}(\hat{m})$,
+
+    \item $\lang_\texttt{pkg}^\texttt{ret}(m) = \lang_\texttt{pkg}(m.\texttt{returnTM}) \;\backslash\; \bigcup\limits_{\hat{m} \in \texttt{exclude}} \lang_\texttt{pkg}^\texttt{ret}(\hat{m})$,
+
+    \item $\lang_\texttt{name}^\texttt{ret}(m) = \lang_\texttt{name}(m.\texttt{returnTM}) \;\backslash\; \bigcup\limits_{\hat{m} \in \texttt{exclude}} \lang_\texttt{name}^\texttt{ret}(\hat{m})$,
+
+    \item $\lang_\texttt{pkg}^\texttt{param}(m,\, i) = \lang_\texttt{pkg}(m.\texttt{paramTMs}\,(i)) \;\backslash\; \bigcup\limits_{\hat{m} \in \texttt{exclude}} \lang_\texttt{pkg}^\texttt{param}(\hat{m},\, i)$,
+
+    \item $\lang_\texttt{name}^\texttt{param}(m,\, i) = \lang_\texttt{name}(m.\texttt{paramTMs}\,(i)) \;\backslash\; \bigcup\limits_{\hat{m} \in \texttt{exclude}} \lang_\texttt{name}^\texttt{param}(\hat{m},\, i)$.
+    \end{itemize}
+
+Two function matchers $m_1, m_2 \in \mathcal{FM}$ are \textbf{consistent} if
+\begin{itemize}
+    \item $\lang_\texttt{pkg}^\texttt{cls}(m_1)$ and $\lang_\texttt{pkg}^\texttt{cls}(m_2)$ are consistent,
+    \item $\lang_\texttt{name}^\texttt{cls}(m_1)$ and $\lang_\texttt{name}^\texttt{cls}(m_2)$ are consistent,
+    \item $\lang_\texttt{name}^\texttt{fun}(m_1)$ and $\lang_\texttt{name}^\texttt{fun}(m_2)$ are consistent,
+    \item $\lang_\texttt{pkg}^\texttt{ret}(m_1)$ and $\lang_\texttt{pkg}^\texttt{ret}(m_2)$ are consistent,
+    \item $\lang_\texttt{name}^\texttt{ret}(m_1)$ and $\lang_\texttt{name}^\texttt{ret}(m_2)$ are consistent,
+    \item for all $i \in \mathbb{N}_0$, $\lang_\texttt{pkg}^\texttt{param}(m_1,\, i)$ and $\lang_\texttt{pkg}^\texttt{param}(m_2,\, i)$ are consistent,
+    \item for all $i \in \mathbb{N}_0$, $\lang_\texttt{name}^\texttt{param}(m_1,\, i)$ and $\lang_\texttt{name}^\texttt{param}(m_2,\, i)$ are consistent.
+\end{itemize}
+
+\section{Conditions}
+\[
+\begin{array}{rcl}
+const       & =    & \texttt{int} \,\mid\, \texttt{string} \,\mid\, \texttt{bool} \\
+\\
+\mathcal{C} & =    & \texttt{true} \\
+            & \mid & \texttt{not} \; \mathcal{C} \\
+            & \mid & \mathcal{C} \lor \mathcal{C} \\
+            & \mid & \mathcal{C} \land \mathcal{C} \\
+            & \mid & \texttt{IsConstant}\,(\texttt{pos} : \mathcal{P}) \\
+            & \mid & \texttt{IsType}\,(\texttt{pos} : \mathcal{P},\, \texttt{matcher} : \mathcal{TM}) \\
+            & \mid & \texttt{AnnotationType}\,(\texttt{pos} : \mathcal{P},\, \texttt{matcher} : \mathcal{TM}) \\
+            & \mid & \texttt{ConstantEq}\,(\texttt{pos} : \mathcal{P},\, \texttt{const} : const) \\
+            & \mid & \texttt{ConstantLt}\,(\texttt{pos} : \mathcal{P},\, \texttt{const} : const) \\
+            & \mid & \texttt{ConstantGt}\,(\texttt{pos} : \mathcal{P},\, \texttt{const} : const) \\
+            & \mid & \texttt{ConstantMatches}\,(\texttt{pos} : \mathcal{P},\, \texttt{pattern} : \regL) \\
+            & \mid & \texttt{SourceFunctionMatches}\,(\texttt{pos} : \mathcal{P},\, \texttt{pattern} : \mathcal{FM}) \\
+            & \mid & \texttt{ContainsMark}\,(\texttt{pos} : \mathcal{P},\, \texttt{mark} : \mathcal{M}) \\
+            & \mid & \texttt{TypeMatches}\,(\texttt{pos} : \mathcal{P},\, \texttt{type} : Java\; type)
+\end{array}
+\]
+
+\noindent \textit{Idea 1}. All conditions except \texttt{true}, \texttt{not}, $(\lor)$ and $(\land)$ apply to exactly one position. They impose various constraints on a given position. We can reduce any condition to disjunctive normal form ($DNF$). For each disjunct, we can identify all conjuncts associated with a given position. It remains to determine whether there is a value for the position that satisfies all the constraints of this position.
+
+\noindent \textit{Idea 2}. Some conditions add different kind of constraints. For example, \texttt{IsConstant} and \texttt{ContainsMark} cannot conflict, since they limit different things.
+
+Two conditions $c_1,\, c_2 \in \mathcal{C}$ are \textbf{consistent} if $DNF(c_1 \land c_2)$ \textbf{\textit{TODO}}.
+
+\section{Rules}
+\[
+\mathcal{R} = \{\; \texttt{methodInfo} : \mathcal{FM};\; \texttt{condition} : \mathcal{C};\; \texttt{actionsAfter} : \mathcal{L}\;\}
+\]
+
+\noindent Two rules $r_1, r_2 \in \mathcal{R}$ are \textbf{conflict} if
+\begin{itemize}
+    \item $r_1.\texttt{methodInfo}$ and $r_2.\texttt{methodInfo}$ are consistent,
+    \item $r_1.\texttt{condition}$ and $r_2.\texttt{condition}$ are consistent,
+    \item $r_1.\texttt{actionsAfter} \;\cLists\; r_2.\texttt{actionsAfter}$.
+\end{itemize}
+\end{document}
